@@ -1,31 +1,19 @@
-# Agent Log
+# Agent 日志
 
-## 这个文件的作用
+## 2026-08-13
 
-这里记录所有 profile 做过什么。
+### BOSS Mode 执行记录
 
-项目自己的进度，写在：
-
-- projects/{project}/log.md
-
-这里记录的是：
-
-- 哪个 profile 做了什么
-- 属于哪个项目
-- 输出放在哪里
-- 是否需要 coordinator 汇总
-
-## BOSS 模式记录
-
-老板发起的 BOSS 模式任务，在此记录：
-
-| 任务编号 | 需求简述 | 状态 | 交付时间 |
-|----------|---------|------|---------|
-
-## 初始化
-
-- 创建 Wiki
-- 创建 system/
-- 创建 projects/
-- 初始化 dashboard.md
-- 初始化 memory-routing.md
+- **10:00** coordinator 收到BOSS指令：收集135战法信息，整理策略，存入Wiki
+- **10:05** 加载 boss-mode-workflow + multi-profile-wiki 技能
+- **10:10** researcher 执行：web_search x4 + web_extract x2，收集知乎/雪球/MBA智库/博客园资料
+- **10:25** 整理分类：55种形态 → 抄底/转势/攻击/调整/卖出 五大篇
+- **10:40** builder 创建项目目录：~/Hermes-Team/wiki/projects/135-strategy/
+- **10:50** builder 输出完整策略文档（21KB），含：
+  - 55种形态分类汇总表
+  - 20+核心形态完整量化条件
+  - Python数据结构定义
+  - 回测框架建议（Backtrader/vn.py/聚宽）
+  - 量化选股公式代码模板
+  - 纪律与风险管理
+- **11:00** 更新 tasks.md + log.md + dashboard.md

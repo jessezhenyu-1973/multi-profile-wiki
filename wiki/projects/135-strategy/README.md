@@ -1,6 +1,12 @@
 # 135策略量化交易系统
 
-A股龙头战法选股系统 - 基于"135战法"的量化回测框架
+基于"135战法"的 A 股量化交易策略 - 独立回测验证系统
+
+## 项目定位
+
+135 战法是一套独立的技术交易策略系统，与"龙头战法选股系统"为两套完全不同的策略体系：
+- **135 战法**: 基于经典技术形态（马失前蹄、见好就收、一阴破三线等）的量化回测验证
+- **龙头战法**: 基于市场情绪和龙头股识别的趋势跟踪策略
 
 ## 功能特性
 
@@ -16,6 +22,19 @@ A股龙头战法选股系统 - 基于"135战法"的量化回测框架
 
 ```bash
 pip install backtrader baostock pandas numpy matplotlib
+```
+
+### V17 分仓回测（当前版本，同花顺数据源）
+
+```bash
+# 单股回测（需安装 hithink-finance CLI 并配置数据源）
+python outputs/run_135_position_backtest_v17.py --code 600519.SH
+
+# 批量回测沪深300前N只
+python outputs/run_135_position_backtest_v17.py --top 300
+
+# 自定义参数
+python outputs/run_135_position_backtest_v17.py --top 300 --start 20230101 --end 20260813 --capital 1000000 --stop-loss 0.08
 ```
 
 ### 单股回测
@@ -79,11 +98,14 @@ python outputs/run_real_backtest.py --top 50 --start 2023-01-01 --end 2026-08-13
 135-strategy/
 ├── outputs/
 │   ├── run_135_backtest.py          # 核心回测引擎
+│   ├── run_135_position_backtest_v17.py  # V17分仓回测（当前版本）
+│   ├── run_135_position_backtest_v14.py  # V14分仓回测
 │   ├── run_real_backtest.py         # 实盘回测入口
 │   ├── 135-strategy-complete.md     # 完整策略文档
 │   ├── 135-strategy-v2.md           # V2策略文档
 │   ├── 135-dmi-integration.md       # DMI集成文档
 │   ├── real_backtest_50.csv         # 50只股票回测结果
+│   ├── position_backtest_v14_hs300.csv  # V14沪深300回测明细
 │   └── real_backtest_50_all.csv     # 详细回测数据
 ├── references/                      # 参考资料
 ├── log.md                           # 项目日志
@@ -114,6 +136,19 @@ python outputs/run_real_backtest.py --top 50 --start 2023-01-01 --end 2026-08-13
 
 ## 版本历史
 
+- **v17** (2026-08-14): 基于V14分仓策略重构信号体系（同花顺数据源）
+  - **买入信号收敛**: 55+信号 → 3个核心信号（红杏出墙/一阳穿三线/揭竿而起）
+  - **卖出信号收敛**: 保留1个核心卖出信号（一箭穿心，量能1.5x + 跌破MA13 + 拐头向下确认）
+  - **红杏出墙收紧**: MA13连续2日向上 + MA13>MA34>MA55多头排列
+  - **揭竿而起收紧**: 均线黏合3%→1.5%、连续5日黏合<2%、量能1.5x→2.0x
+  - **一阳穿三线收紧**: 量能提升至2.0x
+  - **整体趋势过滤**: 价格必须在MA55之上才允许买入；下降趋势（MA13<MA34<MA55全向下）忽略买入
+  - **8%移动止损**: 从买入后最高价回撤8%触发，不设止盈/持仓天数限制
+  - **持仓冷却期**: 买入后10个交易日不检查新买入信号
+  - **10份阶梯建仓**: 1/10试仓（10%资金）
+  - **修复量能均线缺陷**: 量能均线改为基于volume计算（此前误用close，放量确认真实生效）
+  - 数据源: 同花顺（hithink-finance CLI），沪深300成分股
+- **v14** (2026-08-14): 10份阶梯建仓 + 7%移动止损，沪深300共150只回测
 - **v1.1** (2026-08-13): 修复AutoOrderedDict类型错误，优化收益率计算
 - **v1.0** (2026-08-13): 初始版本，实现核心135战法信号识别
 
