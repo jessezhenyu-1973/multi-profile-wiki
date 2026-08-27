@@ -13,6 +13,8 @@ outputs/test_*.py
 outputs/diagnose_*.py
 outputs/check_*.py
 outputs/run_135_position_backtest_v1*.py
+# 例外：v17 是当前交付版本入口（README 指向），必须纳入版本控制
+!outputs/run_135_position_backtest_v17.py
 outputs/run_135_position_backtest_v2*.py
 outputs/run_135_position_backtest_v3*.py
 outputs/run_135_position_backtest_v4*.py
