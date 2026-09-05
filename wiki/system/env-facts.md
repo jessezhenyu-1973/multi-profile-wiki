@@ -33,3 +33,38 @@
 
 ## 长期约定
 - 每日记录进展，保证工作连续性。
+
+## 双机热备互探 (2026-09-05 建立)
+
+- **架构**: gem12 (Linux, 100.95.78.116) <-> JesseHomeNAS (fnOS Linux, 100.69.128.20) 互为备份, 保障 135战法选股/持仓盯盘/收盘采集任务单台宕机不中断
+- **双向 SSH**: 已打通 (远端公钥已加到本机 ~/.ssh/authorized_keys; 本机->远端原本就有)
+- **探测脚本**: `~/135-strategy/outputs/peer_monitor.py` (两边各一份, 按主机名自动识别对端, PEER_HOST 可覆盖)
+  - 探测项: 对端/本机 gateway 进程、主模型 59.35.206.146:8000 /v1/models 连通、cron 任务 last_status、135 数据新鲜度(outputs/ 最新 json)、磁盘、**OpenViking 记忆库 /ready**(读各自 ovcli.conf 的 url: gem12 探 100.69.128.20:1933 客户端视角, NAS 探 127.0.0.1:1933 server 本体, 不 ready 报 CRIT)
+  - 告警去重: 状态文件 ~/.hermes/peer_monitor_state.json, 相同告警 30min 冷却, 恢复时发一次恢复通知
+- **看门狗 cron**: 两边各一个 "双机互探看门狗(135热备)", no_agent 模式, `*/30 9-20 * * 1-5`, 脚本 ~/.hermes/scripts/peer_monitor_watchdog.py (薄包装, 实际逻辑在 135-strategy/outputs/)
+  - 有异常才推飞书(本机 oc_ee25c8415ec4a9623907d2b25cb4d646 / 远端 oc_fb67079b7382718648e532bf938cd6fb), 全绿静默, 零 LLM 成本
+  - 本机 job_id 6d2650365493, 远端 job_id c45cddbe316d
+- **注意**: 远端 hermes 版本较旧, cron 改任务用 `hermes cron edit <id>` 而非 `update`
+
+## OpenViking 长期记忆 (2026-09-05 部署)
+
+> 解决"老是忘记"：中心化记忆库 + 自动语义召回。两个 Hermes 共享同一记忆空间。
+
+- **Server**: NAS `100.69.128.20:1933`（host 网络），Docker 容器 `openviking`，镜像 `ghcr.io/volcengine/openviking:latest`
+  - 数据卷 `~/.openviking`（挂载到容器 `/app/.openviking`），配置 `~/.openviking/ov.conf`
+  - root key `~/.openviking/.root_key`；租户 user key `~/.openviking/.user_key`（account=jesse, user=hermes）
+  - 记忆空间：`viking://user/hermes/...`（两机共享同一空间）
+- **模型**（全本地，无 API Key，数据不出内网）：
+  - embedding：NAS 本地 ollama 容器（host 网络 :11434）+ `nomic-embed-text`（768 维）
+  - VLM/记忆抽取：`qwen3.8-27b-vision` @ `59.35.206.146:8000/v1`（NAS 走内网 0.026s）
+- **两个 Hermes 接入**（都指向同一 server + 同一 user key）：
+  - 本机 gem12：`memory.provider=openviking`，`memory.openviking.use_ovcli_config=true`，ovcli `~/.openviking/ovcli.conf` → `http://100.69.128.20:1933`
+  - NAS：同上，ovcli → `http://127.0.0.1:1933`（同机更快）
+  - 改完配置须 `systemctl --user restart hermes-gateway.service` 生效
+- **坑**：
+  - OpenViking ollama provider 走 OpenAI 兼容接口，`api_base` 必须带 `/v1`（否则 embedding 404）
+  - 插件默认**不读** ovcli.conf，须 `use_ovcli_config: true`；api_key 模式下 server 从 key 推导身份，不发 account/user 头
+  - 写入 URI 命名空间是 `viking://user/hermes/...`（user 名=key 里的 hermes，不是 default）
+  - 召回端点 `/api/v1/search/find`，写入端点 `/api/v1/content/write`
+- **验证**：本机插件 client 写入 → NAS 侧召回命中（score 0.99+），共享确认
+- **markdown wiki 不受影响**：llm-wiki / Hermes-Team/wiki 仍各机各一份，OpenViking 只加"自动召回"层
