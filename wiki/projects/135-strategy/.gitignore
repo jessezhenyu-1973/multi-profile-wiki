@@ -1,0 +1,35 @@
+__pycache__/
+*.pyc
+*.pyo
+.env
+*.egg-info/
+dist/
+build/
+.eggs/
+*.csv.bak
+# scratch / regenerable artifacts
+outputs/debug_*.py
+outputs/test_*.py
+outputs/diagnose_*.py
+outputs/check_*.py
+outputs/run_135_position_backtest_v1*.py
+# 例外：v17 是当前交付版本入口（README 指向），必须纳入版本控制
+!outputs/run_135_position_backtest_v17.py
+outputs/run_135_position_backtest_v2*.py
+outputs/run_135_position_backtest_v3*.py
+outputs/run_135_position_backtest_v4*.py
+outputs/run_135_position_backtest_v5*.py
+outputs/run_135_position_backtest_v6*.py
+outputs/run_135_position_backtest_v7*.py
+outputs/run_135_position_backtest_v8*.py
+outputs/run_135_position_backtest_v9*.py
+outputs/run_135_position_backtest_v10.py
+outputs/run_135_position_backtest_v11.py
+outputs/run_135_position_backtest_v12.py
+outputs/run_135_position_backtest_v13.py
+outputs/run_135_position_backtest_v14.py
+outputs/run_135_position_backtest_v14_fixed.py
+outputs/run_135_position_backtest_v15.py
+outputs/run_135_position_backtest_v16.py
+outputs/*.csv
+outputs/__pycache__/
