@@ -277,9 +277,9 @@ find ~/.hermes/profiles/builder/skills -type f | wc -l      # 94
 
 ## Wiki 索引
 
-> 相关 Wiki 页面位于 `Hermes-Wiki/concepts/` 和 `Hermes-Wiki/entities/`
+> 相关 Wiki 页面位于 `../llm-wiki/concepts/` 和 `../llm-wiki/entities/`
 
-- [[agency-agents-zh]] — 268 专家角色系统介绍
-- [[多Profile协作]] — 多 Profile Wiki 协作系统
-- [[skill-registry]] — 技能注册表（本文件）
-- [[ao-compose]] — 编排器语法
+- [[../llm-wiki/concepts/agency-agents-zh]] — 268 专家角色系统介绍
+- [[../llm-wiki/concepts/multi-profile-wiki]] — 多 Profile Wiki 协作系统
+- [[../llm-wiki/skill-registry]] — 技能注册表（本文件）
+- [[../llm-wiki/concepts/ao-compose]] — 编排器语法
