@@ -10,6 +10,7 @@
 - [[system/memory-routing]]：写入规则，判断一条信息应该写进哪里，防止记忆污染。
 - [[system/skill-registry]]：技能登记表，记录不同 profile 可以使用哪些 skill。
 - [[system/user-profile]]：统一用户画像，记录用户长期偏好，供所有 profile 参考。
+- [[../llm-wiki/index]] — LLM Wiki 知识库入口
 
 ## 项目区
 
