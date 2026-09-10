@@ -79,16 +79,17 @@
 ## multi-profile-wiki 推送流程 (2026-09-10 修订, 实测)
 
 - **仓库**: github.com/jessezhenyu-1973/multi-profile-wiki；`main` 受保护: `enforce_admins=true`（owner 可绕过直推）
-- **实测事实（2026-09-10）**: 该仓库旧版 branch-protection 的 **review 子端点写操作全部 404**（DELETE/PUT 子端点都 Not Found），主端点 PUT 整体 422（"No subschema matched"，`-f required_status_checks=null` 等字段类型校验失败）——旧 API 在此仓库基本只读。而 owner 用 gh token 直推 `main` **成功**（`enforce_admins` 允许 admin 绕过保护，b5e941b→f8ac643 均如此）。**结论: 不需要"解保护→推→恢复保护"三步，直接带 token 推即可。**
-- **标准流程** (NAS 无 GitHub 直连, 须经 GEM12 中转):
+- **首选方案（2026-09-10）: 本机直推，不需绕 GEM12** — NAS 直连 `api.github.com` / `github.com` 正常（TLS 通），凭据在 `~/.hermes/.env` 的 `GITHUB_API_TOKEN`（PAT, 2026-09-10 用户提供，`/user` 验证 200）:
+  ```bash
+  TOK=$(grep -E '^GITHUB_API_TOKEN=' ~/.hermes/.env | cut -d= -f2-)
+  git -C ~/multi-profile-wiki push "https://x-access-token:${TOK}@github.com/jessezhenyu-1973/multi-profile-wiki.git" main
+  ```
+  Contents API 也可写文件（`PUT /repos/.../contents/{path}`，已验证 200）。
+  **坑**: 取 token 务必 `cut -d= -f2-`（key 含 `=` 结尾 padding，`cut -f2` 会截断）+ `tr -d '\r'`，截断后 API 报 401 Bad credentials 极易误判"token 失效"
+- **备选（GEM12 中转，token 不可用时）**: bundle + scp + GEM12 带 `gh auth token` 推。实测坑: 该仓库旧版 branch-protection 的 review 子端点**写操作全部 404**（DELETE/PUT 都 Not Found），主端点整体 PUT 报 422（"No subschema matched"）——旧 API 写在此仓库不可用；`credential.helper=store` 无凭据时 `git push`/`ls-remote` 卡交互提示挂起，须 `export GIT_TERMINAL_PROMPT=0` 或带 token 直推。
+- **标准流程** (首选, 本机直推):
   1. 改动的机器上 `git commit`
-  2. 传改动到 GEM12: `git bundle create /tmp/x.bundle main` → `scp` → GEM12 上 `git fetch /tmp/x.bundle main && git merge FETCH_HEAD --no-edit`
-  3. **GEM12 推送必须带 token，否则挂起**（实测坑）: GEM12 的 `git credential.helper=store` 无凭据时 `git push origin main` / `git ls-remote` 会卡交互提示直到超时。正确姿势:
-     ```bash
-     TOK=$(gh auth token)
-     git push "https://x-access-token:${TOK}@github.com/jessezhenyu-1973/multi-profile-wiki.git" main
-     ```
-     诊断挂起先 `git ls-remote origin main`（会立刻挂），别盲目重试 push
-  4. 对齐: 改动机 `git fetch origin && git reset --hard origin/main`，三方 `git log -1` 核对一致
+  2. `git push "https://x-access-token:${TOK}@github.com/jessezhenyu-1973/multi-profile-wiki.git" main`（TOK 见上）
+  3. 对齐: 另一台机器 `git fetch origin && git reset --hard origin/main`（或 pull），双方 `git log -1` 核对一致
 - **已知遗留**: 09-05 记录的"1 approving review"保护现已不可读/写（API 404，可能在 rulesets 体系下）；当前可验证的保护 = `enforce_admins=true` + `required_conversation_resolution=true`。owner admin token 推不受阻。
 - **OpenViking 灌库**: llm-wiki + 135-strategy 项目 wiki 已于 2026-09-05 灌入 `viking://resources/` (两机共享可检索); 重复入队会产生 `_1` 后缀目录, 用容器内 `ov rm -r` 删 (处理中会 CONFLICT, 等解锁)
