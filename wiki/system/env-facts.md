@@ -11,10 +11,15 @@
 - **Tailscale**：VPS `100.75.28.79`；本机 `100.95.78.116`（jesse-gem12）；NAS `100.69.128.20`；手机 `v2436a`
 - **系统加固**：BBR + 2G swap；fail2ban；`sudo` 免密已配（`/etc/sudoers.d/jesse`，`SUDO_PASSWORD` 在 `.env`）
 
-## 模型配置（2026-08-26 实测）
-- **主模型**：`opencode-free/hy3-free`（x-preview-f-free 下架替换）
-- **视觉**：hy3 假视觉 → config 声明 `supports_vision:false`，图片走 `vision_analyze`
-- **fallback 链**：`qwen38-local/Qwen3.8-27B@59.35.206.146:8000/v1`（真视觉）→ `openrouter/nemotron-3-ultra:free` → `nvidia/nemotron-3-super-120b`
+## 模型配置（2026-09-10 更新）
+- **主模型**：`agnes-3.0-flash @ custom`（`https://apihub.agnes-ai.com/v1`，key 在 `.env` `HERMES_CUSTOM_APIHUB_AGNES_AI_COM_API_KEY`）
+  - 实测文本 200/1.4s；**支持视觉**（base64 PNG 识读 OK，content 非空）；reasoning 模型，短输出时 content 可能空、答案在 reasoning_content，给足 max_tokens 即正常
+- **fallback 链**（4 条全实测 200，跨供应商冗余）：
+  1. `openrouter/nvidia/nemotron-3-ultra-550b-a55b:free`（550B 最强，偶发上游 overload）
+  2. `openrouter/nvidia/nemotron-3-super-120b-a12b:free`
+  3. `openrouter/z-ai/glm-5.3-flash`
+  4. `nous/meituan/longcat-2.0:free`
+- **OpenViking VLM/记忆抽取 = 主模型**（2026-09-10 起两机统一指向 `agnes-3.0-flash @ apihub`，见下节）
 - **Zen keyless**：`chat/completions` 带 `Bearer` token 反而 401，须**不带 Authorization**，仅 `hermes-cli` UA
 
 ## 数据源
@@ -54,9 +59,11 @@
   - 数据卷 `~/.openviking`（挂载到容器 `/app/.openviking`），配置 `~/.openviking/ov.conf`
   - root key `~/.openviking/.root_key`；租户 user key `~/.openviking/.user_key`（account=jesse, user=hermes）
   - 记忆空间：`viking://user/hermes/...`（两机共享同一空间）
-- **模型**（全本地，无 API Key，数据不出内网）：
+- **模型**：
   - embedding：NAS 本地 ollama 容器（host 网络 :11434）+ `nomic-embed-text`（768 维）
-  - VLM/记忆抽取：`qwen3.8-27b-vision` @ `59.35.206.146:8000/v1`（NAS 走内网 0.026s）
+  - VLM/记忆抽取（2026-09-10 更新）：**两机统一指向主模型 `agnes-3.0-flash @ https://apihub.agnes-ai.com/v1`**（key 在各自 `~/.hermes/.env` 的 `HERMES_CUSTOM_APIHUB_AGNES_AI_COM_API_KEY`）；实测支持视觉、reasoning 模型 content 正常
+  - 历史：此前 NAS 用 `qwen3.8-27b-vision @ 59.35.206.146:8000/v1`、gem12 用 `openrouter/nemotron-3-super-120b:free`，均已被 agnes 替换
+  - 改配置：NAS 改 `~/.openviking/ov.conf` 的 `vlm` 块后 `docker restart openviking`；gem12 同文件后 `systemctl --user restart openviking.service`（两机部署不同：NAS 是 Docker 容器，gem12 是 uv + systemd user service）
 - **两个 Hermes 接入**（都指向同一 server + 同一 user key）：
   - 本机 gem12：`memory.provider=openviking`，`memory.openviking.use_ovcli_config=true`，ovcli `~/.openviking/ovcli.conf` → `http://100.69.128.20:1933`
   - NAS：同上，ovcli → `http://127.0.0.1:1933`（同机更快）
